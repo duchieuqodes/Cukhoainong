@@ -31,7 +31,7 @@ const bot = new TelegramBot(token, { polling: true });
 const bannedStringsRegex = /(ca\s?1|ca1|ca\s?2|Ca\s?2|Ca\s?1|Ca1|Ca\s?2|Ca2|C1|C2|c\s?1|c\s?2|C\s?1|C\s?2)\s*/gi;
 
 // Thiết lập cron job để xóa dữ liệu bảng công của ngày hôm trước
-cron.schedule('0 0 * * *', async () => {
+cron.schedule('0 3 * * *', async () => {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const formattedYesterday = new Date(yesterday.toLocaleDateString());
@@ -78,7 +78,7 @@ bot.on('message', async (msg) => {
 
           if (suffix.toLowerCase() === 'q' || suffix.toLowerCase() === 'p') {
             quay += number; // Nếu sau số là "q" hoặc "Q", thêm vào "quay"
-          } else if (suffix.toLowerCase() === 'c' || suffix === 'acc') {
+          } else if (suffix.toLowerCase() === 'c' || suffix === '+') {
             keo += number; // Nếu sau số là "c", "C", hoặc "acc", thêm vào "keo"
           } else if (suffix === 'quẩy') {
             quay += number; // Nếu sau số là "quẩy", thêm vào "quay"
