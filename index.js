@@ -131,6 +131,21 @@ const groupNames = {
   "-1002129896837": "KHÔNG NGỪNG ĐỔI MỚI",
 };
 
+// Hàm để chia tin nhắn thành các phần nhỏ hơn
+const splitLongMessage = (message, maxLength = 4000) => {
+  const parts = [];
+  while (message.length > maxLength) {
+    let lastIndex = message.lastIndexOf('\n', maxLength); // Tìm vị trí xuống dòng gần nhất
+    if (lastIndex === -1) {
+      lastIndex = maxLength; // Nếu không có vị trí xuống dòng, chia theo giới hạn
+    }
+    parts.push(message.substring(0, lastIndex));
+    message = message.substring(lastIndex).trim(); // Cắt bỏ phần đã chia và tiếp tục
+  }
+  parts.push(message); // Thêm phần cuối cùng
+  return parts;
+};
+
 // Xử lý lệnh /bc để hiển thị bảng công cho tất cả các nhóm
 bot.onText(/\/bc/, async (msg) => {
   const chatId = msg.chat.id;
@@ -181,7 +196,12 @@ bot.onText(/\/bc/, async (msg) => {
       response += `Tổng tiền: ${formattedTotal}vnđ\n\n`; // Hiển thị tổng tiền của nhóm
     }
 
-    bot.sendMessage(chatId, response.trim());
+    / Chia tin nhắn thành nhiều phần nếu quá dài
+    const responseParts = splitLongMessage(response.trim());
+
+    responseParts.forEach((part) => {
+      bot.sendMessage(chatId, part);
+    });
   } catch (error) {
     console.error('Lỗi khi truy vấn dữ liệu từ MongoDB:', error);
     bot.sendMessage(chatId, 'Đã xảy ra lỗi khi truy vấn dữ liệu từ cơ sở dữ liệu.');
