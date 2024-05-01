@@ -196,7 +196,7 @@ bot.onText(/\/bc/, async (msg) => {
       response += `Tổng tiền: ${formattedTotal}vnđ\n\n`; // Hiển thị tổng tiền của nhóm
     }
 
-    / Chia tin nhắn thành nhiều phần nếu quá dài
+    // Chia tin nhắn thành nhiều phần nếu quá dài
     const responseParts = splitLongMessage(response.trim());
 
     responseParts.forEach((part) => {
