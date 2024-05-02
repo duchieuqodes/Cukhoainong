@@ -1,6 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
 const mongoose = require('mongoose');
-const request = require('request');
 const cron = require('node-cron'); // Thư viện để thiết lập cron jobs
 const keep_alive = require('./keep_alive.js')
 
@@ -258,58 +257,4 @@ bot.onText(/\/tong/, async (msg) => {
   }
 });
 
-
-const weatherAPI = 'https://api.openweathermap.org/data/2.5/forecast?appid=YOUR_WEATHER_API_KEY&q=Hanoi,vn&units=metric';  // API dự báo thời tiết trong 3 tiếng tới
-
-const alertConditions = {
-  'overcast clouds': 'mây u ám',
-  'light rain': 'mưa nhẹ',
-  'moderate rain': 'mưa vừa',
-  'heavy rain': 'mưa lớn',
-  'thunderstorm': 'giông bão'
-};
-
-let lastAlertTime = null;
-
-function checkWeather() {
-  request(weatherAPI, (error, response, body) => {
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    const data = JSON.parse(body);
-
-    // Lấy thông tin thời tiết dự báo 1 giờ tới
-    if (data.list.length > 1) {  // Đảm bảo có ít nhất 2 bản ghi trong dữ liệu dự báo
-      const oneHourLaterWeather = data.list[1].weather[0].description.toLowerCase();  // Dự báo thời tiết trong 1 giờ tới
-      const translatedWeather = translateWeatherDescription(oneHourLaterWeather);  // Dịch mô tả thời tiết sang tiếng Việt
-      
-      if (shouldSendAlert(translatedWeather)) {
-        sendAlert(translatedWeather);
-      }
-    }
-  });
-}
-
-function translateWeatherDescription(weatherDescription) {
-  return alertConditions[weatherDescription] || 'một điều kiện thời tiết không xác định';  // Chuyển mô tả tiếng Anh sang tiếng Việt
-}
-
-function shouldSendAlert(weatherDescription) {
-  return Object.values(alertConditions).includes(weatherDescription.toLowerCase());
-}
-
-function sendAlert(weatherDescription) {
-  const now = new Date();
-
-  if (lastAlertTime === null || now.getTime() - lastAlertTime >= 3600000) {  // 1 giờ trong mili giây
-    lastAlertTime = now.getTime();
-
-    bot.sendMessage(-1002128289933, `Cảnh báo thời tiết!\n\nDự báo trong 1 giờ tới, trời Hà Nội có ${weatherDescription}. Anh em hãy cẩn thận!`);
-  }
-}
-
-// Kiểm tra thời tiết mỗi 15 phút để giảm tải hệ thống
-setInterval(checkWeather, 900000);  // 15 phút trong mili giây
 
