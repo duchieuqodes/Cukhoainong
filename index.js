@@ -19,6 +19,7 @@ const BangCongSchema = new mongoose.Schema({
   quay: Number,
   keo: Number,
   tinh_tien: Number,
+  timestamp: { type: Date, default: Date.now },
 });
 
 // Tạo model từ schema
@@ -27,9 +28,9 @@ const BangCong2 = mongoose.model('BangCong2', BangCongSchema);
 const token = '7150645082:AAGUNk7BrBPYJqv085nINEGx7p5tCE9WcK0';
 const bot = new TelegramBot(token, { polling: true });
 
-// Chuỗi cấm
-const bannedStringsRegex = /(ca\s?1|ca1|ca\s?2|Ca\s?2|Ca\s?1|Ca1|Ca\s?2|Ca2|C1|C2|c\s?1|c\s?2|C\s?1|C\s?2)\s*/gi;
-
+// Biểu thức chính quy cho chuỗi cấm
+const bannedString1 = /(ca\s?1|ca1|Ca\s?1|Ca1|C1|c\s?1|C\s?1)\s*/gi;
+const bannedString2 = /(ca\s?2|Ca\s?2|Ca2|C2|c\s?2|C\s?2)\s*/gi;
 // Thiết lập cron job để xóa dữ liệu bảng công của ngày hôm trước
 cron.schedule('0 3 * * *', async () => {
   const yesterday = new Date();
@@ -64,7 +65,33 @@ bot.on('message', async (msg) => {
       const userId = msg.from.id;
       const groupId = chatId;
       
-    
+      // Kiểm tra nếu đã nộp bài trong vòng 4 tiếng trước đó hoặc chứa chuỗi cấm trong ngày hiện tại
+      const currentDate = new Date().toLocaleDateString(); // Ngày hiện tại
+      const fourHoursAgo = new Date(Date.now() - 20000); // 4 tiếng trước
+
+      const conflictingSubmission = await BangCong2.findOne({
+        userId,
+        groupId,
+        $or: [
+          { timestamp: { $gt: fourHoursAgo } },
+          {
+            date: currentDate,
+            $or: [
+              { text: { $regex: bannedString1 } },
+              { text: { $regex: bannedString2 } },
+            ],
+          },
+        ],
+      });
+        if (conflictingSubmission) {
+        bot.sendMessage(
+          chatId,
+          'Bạn đã nộp bài trong vòng 4 tiếng trước đó hoặc bài nộp chứa chuỗi cấm trong ngày hôm nay. Vui lòng liên hệ anh Hieu Gà để được giải quyết.',
+          { reply_to_message_id: msg.message_id }
+        );
+        return; // Ngừng xử lý nếu có xung đột
+        }
+
       // Tìm tất cả số và ký tự sau số
       // Tìm tất cả số theo sau bởi q, c, Q, C, quẩy, cộng, hoặc acc
       
@@ -105,12 +132,13 @@ bot.on('message', async (msg) => {
             quay,
             keo,
             tinh_tien: quay * 500 + keo * 1000,
+            timestamp: new Date(),
           });
         } else {
           bangCong.quay += quay;
           bangCong.keo += keo;
           bangCong.tinh_tien += quay * 500 + keo * 1000;
-
+          bangCong.timestamp = new Date(); 
           await bangCong.save();
         }
       });
