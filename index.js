@@ -65,32 +65,7 @@ bot.on('message', async (msg) => {
       const userId = msg.from.id;
       const groupId = chatId;
       
-      // Kiểm tra nếu đã nộp bài trong vòng 4 tiếng trước đó hoặc chứa chuỗi cấm trong ngày hiện tại
-      const currentDate = new Date().toLocaleDateString(); // Ngày hiện tại
-      const fourHoursAgo = new Date(Date.now() - 20000); // 4 tiếng trước
-
-      const conflictingSubmission = await BangCong2.findOne({
-        userId,
-        groupId,
-        $or: [
-          { timestamp: { $gt: fourHoursAgo } },
-          {
-            date: currentDate,
-            $or: [
-              { text: { $regex: bannedString1 } },
-              { text: { $regex: bannedString2 } },
-            ],
-          },
-        ],
-      });
-        if (conflictingSubmission) {
-        bot.sendMessage(
-          chatId,
-          'Bạn đã nộp bài trong vòng 4 tiếng trước đó hoặc bài nộp chứa chuỗi cấm trong ngày hôm nay. Vui lòng liên hệ anh Hieu Gà để được giải quyết.',
-          { reply_to_message_id: msg.message_id }
-        );
-        return; // Ngừng xử lý nếu có xung đột
-        }
+      
 
       // Tìm tất cả số và ký tự sau số
       // Tìm tất cả số theo sau bởi q, c, Q, C, quẩy, cộng, hoặc acc
