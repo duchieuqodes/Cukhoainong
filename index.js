@@ -64,7 +64,23 @@ bot.on('message', async (msg) => {
     const matches = messageContent.match(regex);
       const userId = msg.from.id;
       const groupId = chatId;
-      
+
+      // Kiểm tra nếu thành viên đã nộp bài trong vòng 4 tiếng trước đó
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const previousSubmission = await BangCong2.findOne({
+        userId,
+        groupId,
+        timestamp: { $gt: fourHoursAgo },
+      });
+
+      if (previousSubmission) {
+        bot.sendMessage(
+          chatId,
+          'Nộp không thành công, bạn đã nộp bài ca này của nhóm này trước đó rồi, nếu muốn chỉnh sửa vui lòng liên hệ anh Hieu Gà để được giải quyết (Vui lòng chỉ nộp 1 lần)',
+          { reply_to_message_id: msg.message_id }
+        );
+        return; // Kết thúc xử lý nếu đã nộp trước đó
+      }
       
 
       // Tìm tất cả số và ký tự sau số
