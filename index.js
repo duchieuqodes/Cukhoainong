@@ -26,7 +26,7 @@ const BangCong2 = mongoose.model('BangCong2', BangCongSchema);
 const token = '7150645082:AAGUNk7BrBPYJqv085nINEGx7p5tCE9WcK0';
 const bot = new TelegramBot(token, { polling: true });
 
-// Chuỗi cấm
+// Chuỗi cấmm
 const bannedStringsRegex = /(ca\s?1|ca1|ca\s?2|Ca\s?2|Ca\s?1|Ca1|Ca\s?2|Ca2|C1|C2|c\s?1|c\s?2|C\s?1|C\s?2)\s*/gi;
 
 // Thiết lập cron job để xóa dữ liệu bảng công của ngày hôm trước
