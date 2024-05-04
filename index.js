@@ -18,7 +18,6 @@ const BangCongSchema = new mongoose.Schema({
   quay: Number,
   keo: Number,
   tinh_tien: Number,
-  timestamp: { type: Date, default: Date.now },
 });
 
 // Tạo model từ schema
@@ -27,11 +26,11 @@ const BangCong2 = mongoose.model('BangCong2', BangCongSchema);
 const token = '7150645082:AAGUNk7BrBPYJqv085nINEGx7p5tCE9WcK0';
 const bot = new TelegramBot(token, { polling: true });
 
-// Biểu thức chính quy cho chuỗi cấm
-const bannedString1 = /(ca\s?1|ca1|Ca\s?1|Ca1|C1|c\s?1|C\s?1)\s*/gi;
-const bannedString2 = /(ca\s?2|Ca\s?2|Ca2|C2|c\s?2|C\s?2)\s*/gi;
+// Chuỗi cấm
+const bannedStringsRegex = /(ca\s?1|ca1|ca\s?2|Ca\s?2|Ca\s?1|Ca1|Ca\s?2|Ca2|C1|C2|c\s?1|c\s?2|C\s?1|C\s?2)\s*/gi;
+
 // Thiết lập cron job để xóa dữ liệu bảng công của ngày hôm trước
-cron.schedule('0 3 * * *', async () => {
+cron.schedule('0 0 * * *', async () => {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const formattedYesterday = new Date(yesterday.toLocaleDateString());
@@ -63,25 +62,8 @@ bot.on('message', async (msg) => {
     const matches = messageContent.match(regex);
       const userId = msg.from.id;
       const groupId = chatId;
-
-      // Kiểm tra nếu thành viên đã nộp bài trong vòng 4 tiếng trước đó
-      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
-      const previousSubmission = await BangCong2.findOne({
-        userId,
-        groupId,
-        timestamp: { $gt: fourHoursAgo },
-      });
-
-      if (previousSubmission) {
-        bot.sendMessage(
-          chatId,
-          'Nộp không thành công, bạn đã nộp bài ca này của nhóm này trước đó rồi, nếu muốn chỉnh sửa vui lòng liên hệ anh Hieu Gà để được giải quyết (Vui lòng chỉ nộp 1 lần)',
-          { reply_to_message_id: msg.message_id }
-        );
-        return; // Kết thúc xử lý nếu đã nộp trước đó
-      }
       
-
+    
       // Tìm tất cả số và ký tự sau số
       // Tìm tất cả số theo sau bởi q, c, Q, C, quẩy, cộng, hoặc acc
       
@@ -95,7 +77,7 @@ bot.on('message', async (msg) => {
 
           if (suffix.toLowerCase() === 'q' || suffix.toLowerCase() === 'p') {
             quay += number; // Nếu sau số là "q" hoặc "Q", thêm vào "quay"
-          } else if (suffix.toLowerCase() === 'c' || suffix === '+') {
+          } else if (suffix.toLowerCase() === 'c' || suffix === 'acc') {
             keo += number; // Nếu sau số là "c", "C", hoặc "acc", thêm vào "keo"
           } else if (suffix === 'quẩy') {
             quay += number; // Nếu sau số là "quẩy", thêm vào "quay"
@@ -122,13 +104,12 @@ bot.on('message', async (msg) => {
             quay,
             keo,
             tinh_tien: quay * 500 + keo * 1000,
-            timestamp: new Date(),
           });
         } else {
           bangCong.quay += quay;
           bangCong.keo += keo;
           bangCong.tinh_tien += quay * 500 + keo * 1000;
-          bangCong.timestamp = new Date(); 
+
           await bangCong.save();
         }
       });
@@ -147,21 +128,6 @@ const groupNames = {
   "-1002143712364": "CURRENCY SHINING STAR GROUP",
   "-1002128975957": "CỘNG ĐỒNG KHỞI NGHIỆP",
   "-1002129896837": "KHÔNG NGỪNG ĐỔI MỚI",
-};
-
-// Hàm để chia tin nhắn thành các phần nhỏ hơn
-const splitLongMessage = (message, maxLength = 4000) => {
-  const parts = [];
-  while (message.length > maxLength) {
-    let lastIndex = message.lastIndexOf('\n', maxLength); // Tìm vị trí xuống dòng gần nhất
-    if (lastIndex === -1) {
-      lastIndex = maxLength; // Nếu không có vị trí xuống dòng, chia theo giới hạn
-    }
-    parts.push(message.substring(0, lastIndex));
-    message = message.substring(lastIndex).trim(); // Cắt bỏ phần đã chia và tiếp tục
-  }
-  parts.push(message); // Thêm phần cuối cùng
-  return parts;
 };
 
 // Xử lý lệnh /bc để hiển thị bảng công cho tất cả các nhóm
@@ -214,12 +180,7 @@ bot.onText(/\/bc/, async (msg) => {
       response += `Tổng tiền: ${formattedTotal}vnđ\n\n`; // Hiển thị tổng tiền của nhóm
     }
 
-    // Chia tin nhắn thành nhiều phần nếu quá dài
-    const responseParts = splitLongMessage(response.trim());
-
-    responseParts.forEach((part) => {
-      bot.sendMessage(chatId, part);
-    });
+    bot.sendMessage(chatId, response.trim());
   } catch (error) {
     console.error('Lỗi khi truy vấn dữ liệu từ MongoDB:', error);
     bot.sendMessage(chatId, 'Đã xảy ra lỗi khi truy vấn dữ liệu từ cơ sở dữ liệu.');
@@ -274,5 +235,3 @@ bot.onText(/\/tong/, async (msg) => {
     bot.sendMessage(chatId, "Đã xảy ra lỗi khi truy vấn dữ liệu từ cơ sở dữ liệu.");
   }
 });
-
-
